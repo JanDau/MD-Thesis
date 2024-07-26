@@ -6,18 +6,18 @@ Within this GitHub repository I share my Python and R scripts which I used in my
 
 - [1. Docker Installation](#1-docker-installation)
 - [2 Preprocessing](#2-preprocessing)
-- [3. Filtering of samples by read distribution](#3-Filtering-of-samples-by-read-distribution)
-- [4. Rough estimation of barcode library size](#4-Rough-estimation-of-barcode-library-size)
-- [5. Determination and application of deviation thresholds](#5-Determination-and-application-of-deviation-thresholds)
-- [6. Allocation of samples towards mice and cohort](#6-Allocation-of-samples-towards-mice-and-cohort)
-- [7. Mouse Library based clustering](#7-Mouse-Library-based-clustering)
-- [8. Stringency filtering](#8-Stringency-filtering)
-- [9. Rough estimation of how much overlap is (un)likely between animals](#9-Rough-estimation-of-how-much-overlap-is-(un)likely-between-animals)
-- [10. Read filtering](#10-Read-filtering)
-- [11. Reallocate for easier access](#11-Reallocate-for-easier-access)
-- [12. Merge animals](#12-Merge-animals)
-- [13. Merge replicates](#13-Merge-replicates)
-- [14. Generation of final figures](#14-Generation-of-final-figures)
+- [3. Filtering of samples by read distribution](#3-filtering-of-samples-by-read-distribution)
+- [4. Rough estimation of barcode library size](#4-rough-estimation-of-barcode-library-size)
+- [5. Determination and application of deviation thresholds](#5-determination-and-application-of-deviation-thresholds)
+- [6. Allocation of samples towards mice and cohort](#6-allocation-of-samples-towards-mice-and-cohort)
+- [7. Mouse Library based clustering](#7-mouse-library-based-clustering)
+- [8. Stringency filtering](#8-stringency-filtering)
+- [9. Rough estimation of how much overlap is likely between animals](#9-rough-estimation-of-how-much-overlap-is-likely-between-animals)
+- [10. Read filtering](#10-read-filtering)
+- [11. Reallocate for easier access](#11-reallocate-for-easier-access)
+- [12. Merge animals](#12-merge-animals)
+- [13. Merge replicates](#13-merge-replicates)
+- [14. Generation of final figures](#14-generation-of-final-figures)
 - [License](#license)
 - [Contact](#contact)
 
@@ -206,8 +206,8 @@ Call the script supplying a directory or individual file(s) as separate argument
 
 ```sh
 docker run -it --rm -v C:/your/path:/JD py_env python /JD/scripts/4_CSR/Clust-Lib_Create_24_JD_Docker.py /JD/data/your-cohort-name/a-certain-ID-in-your-Sample-Allocation-csv
-...
 ```
+(Repeat for all files)
 
     -> A library file is created within the corresponding directory.
 
@@ -219,8 +219,8 @@ Call [Clust-Lib_Use_23_JD_Docker.py](/scripts/4_CSR/Clust-Lib_Use_23_JD_Docker.p
 
 ```sh
 docker run -it --rm -v C:/your/path:/JD py_env python /JD/scripts/4_CSR/Clust-Lib_Use_23_JD_Docker.py /JD/data/your-cohort-name/a-certain-ID-in-your-Sample-Allocation-csv
-...
 ```
+(Repeat for all files)
 
    -> The clustered files are located inside `.../UsedLibrary` in the respective folder.
 
@@ -240,7 +240,7 @@ docker run -it --rm -v C:/your/path:/JD py_env python /JD/scripts/4_CSR/Filter_D
    -> clustered files are being filtered for the stringent structure and saved inside a new folder `MaxDev0` in each animal directory, e.g., `.../mouse/SF-T#1/UsedLibrary/MaxDev0`.
 
 
-## 9. Rough estimation of how much overlap is (un)likely between animals
+## 9. Rough estimation of how much overlap is likely between animals
 This information is needed in the following step for the read threshold. Theoretically, a certain degree of overlap between different individual (mice) is statistically likely due to the limited barcode library size. However, sequences shared by all mice are more likely to be contaminations in all samples with only minor reads. This step determines the cut-off. The mode value of the sequences shared by more than the determined number of animals will be used as the read threshold.
 
 ### 9.1 Merge clustered and stringency-filtered (CS) samples
@@ -343,7 +343,7 @@ docker run -it --rm -v C:/your/path:/JD py_env python /JD/scripts/5_Misc/Merge_R
 Explanation of how to create final figures and additional filtering/clustering steps are explained in the respective readme files in the `/analysis` subdirectories.
 
 ## License
-This project is licensed under the MIT License. See the `[LICENSE](LICENSE)` file for details.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
 ## Contact
-If you want to contact me, you can reach me by [jannik.berlin@gmail.com](jannik.berlin@gmail.com).
+If you want to contact me, you can reach me by [jannik.berlin@gmail.com](mailto:jannik.berlin@gmail.com).
