@@ -69,7 +69,7 @@ In all upcoming commands, you may need to adapt the respective paths. The genera
 ```sh
 docker run -it --rm -v C:/your/local/path:/your/virtual/path docker_image_name script (args)
 ```
-whereas `docker run -it --rm -v` remains identical at all times, `C:/your/local/path` should be the main directory of your experiment, which contains all the data. This directory and its subdirectories is provided to the Docker container (virtual environment) to the path that follows after the `:`, e.g. `/your/virtual/path`, which could simply be `/JD`. The docker_image_name is either `py_env` or `r_env` if you named them identical as I explained in [1.3 Build the Docker Images](1-3-build-the-docker-images). `script` is the (virtual) path to the script you want to execute and `args` is optional and can be one or more arguments, depending on the script.
+whereas `docker run -it --rm -v` remains identical at all times, `C:/your/local/path` should be the main directory of your experiment, which contains all the data. This directory and its subdirectories is provided to the Docker container (virtual environment) to the path that follows after the `:`, e.g. `/your/virtual/path`, which could simply be `/JD`. The docker_image_name is either `py_env` or `r_env` if you named them identical as I explained in [1.3 Build the Docker Images](13-build-the-docker-images). `script` is the (virtual) path to the script you want to execute and `args` is optional and can be one or more arguments, depending on the script.
 
 In the following, we assume, that my data is found at `C:/your/path` and the main directory in my Docker environment is `/JD`.
 
