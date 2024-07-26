@@ -6,6 +6,18 @@ Within this GitHub repository I share my Python and R scripts which I used in my
 
 - [1. Docker Installation](#1-docker-installation)
 - [2 Preprocessing](#2-preprocessing)
+- [3. Filtering of samples by read distribution](#3-Filtering-of-samples-by-read-distribution)
+- [4. Rough estimation of barcode library size](#4-Rough-estimation-of-barcode-library-size)
+- [5. Determination and application of deviation thresholds](#5-Determination-and-application-of-deviation-thresholds)
+- [6. Allocation of samples towards mice and cohort](#6-Allocation-of-samples-towards-mice-and-cohort)
+- [7. Mouse Library based clustering](#7-Mouse-Library-based-clustering)
+- [8. Stringency filtering](#8-Stringency-filtering)
+- [9. Rough estimation of how much overlap is (un)likely between animals](#9-Rough-estimation-of-how-much-overlap-is-(un)likely-between-animals)
+- [10. Read filtering](#10-Read-filtering)
+- [11. Reallocate for easier access](#11-Reallocate-for-easier-access)
+- [12. Merge animals](#12-Merge-animals)
+- [13. Merge replicates](#13-Merge-replicates)
+- [14. Generation of final figures](#14-Generation-of-final-figures)
 - [License](#license)
 - [Contact](#contact)
 
@@ -97,7 +109,7 @@ docker run -it --rm -v C:/your/path:/JD py_env python /JD/scripts/1_preprocessin
 The statistics at the end of the code execution are automatically saved as a text file in the respective preprocessed directory. You can execute the scripts in parallel using different shells. It might take a couple of hours, depending on your hardware.
 All sequences with up to 5 errors were now recovered from the raw data set in my case.
 
-## 3. Filtering of samples by read distribution (“Run Indices”) 
+## 3. Filtering of samples by read distribution
 Reads of a run are not equally distributed between all samples / index sequences (ITRGB_001, … ITRGB_100). Some samples are slightly overrepresented, assuming an equal distribution (expected reads). In contrast, others do not have any reads, e.g., if you included mock controls, like I did. Samples with only very few sequences and minor read counts hamper the analysis of the relative composition. E. g. suppose a sample contains only one sequence with one read while all its related samples (e.g., different time points of peripheral blood samples) have>5.000 reads. In that case, it does not represent the real sample and should be excluded from the analysis. As a threshold, I decided to exclude samples that fail to exceed the lower 95% CI of the reads mean (= Run Index <0.127). By this, only very few samples were excluded, mainly containing one sequence with one read.
 
 1. Open [Run-indices_11_JD_Docker.R](/scripts/1_preprocessing/Run-indices_11_JD_Docker.R)  at `/scripts/1_preprocessing/` with NotePad++.
@@ -119,7 +131,7 @@ Manually exclude samples that do not fulfill run index criteria by moving them f
 
 Theoretically, an underperforming index primer used for multiplexing could also be the reason for a low run index. You may reveal this by fusing all of your statistics files and calculat means and standard deviations for each of the index primers and compare it to the overall mean and SD.
 
- ## 4. Rough estimation of barcode library size
+## 4. Rough estimation of barcode library size
 This step is necessary to determine the data set's maximum allowed deviation (which corresponds to the cluster distance). The estimation needs to be done for every distinct experiment, in my case different transplantation cohorts.
 
 ### 4.1 Chapman estimation based on plasmid triplicates and preTX samples
@@ -275,58 +287,60 @@ docker run -it --rm -v C:/your/path:/JD r_env Rscript /JD/data/barcode_data/scri
 If no intersection occurs (as in the _human_ cohort in my case), the choice is your's. I took five (the lower, the more conservative).   
 
 ### 9.5 Calculate the mode
-This script now takes all BC-Distr_Group_....csv files from a cohort higher than the given threshold as the 2nd argument, which is 9 for the Mouse cohort and 5 for the Human cohort.
-Mouse:
-docker run -it --rm -v C:/your/path:/JD r_env Rscript /JD/data/barcode_data/scripts/4_CSR/Mode_Docker.R /JD/docker/export/mouse_CS 9
-
-Human:
-docker run -it --rm -v C:/your/path:/JD r_env Rscript /JD/data/barcode_data/scripts/4_CSR/Mode_Docker.R /JD/docker/export/human_CS 5
-
-The mode is printed in the console: 	Mouse cohort: 2	Human cohort: 1
-Lastly, you may move the files from “./docker/export” to the “../4_CSR” directory.
-
-10. Read filtering
-Open ”../4_CSR/Filter_Reads_Multiple_10_JD_Docker.py” with NotePad++.  Set userThresh to 2 (Murine cohort) or 1 (Human cohort). userSkip allows to skip (not apply the read filter) highly diverse (preTX) samples if the criteria are fulfilled, e.g., the “mean” read count is <= 8. Set usr_filter to “CS”, as you want to apply the filter on the clustered and stringency-filtered files. usr_replace does not need to be adapted.
-Run 
-docker run -it --rm -v C:/your/path:/JD py_env python /JD/data/barcode_data/scripts/4_CSR/Filter_Reads_Multiple_10_JD_Docker.py /JD/data/barcode_data/data/mouse
-for the murine and …
-docker run -it --rm -v C:/your/path:/JD py_env python /JD/data/barcode_data/scripts/4_CSR/Filter_Reads_Multiple_10_JD_Docker.py /JD/data/barcode_data/data/human
-for the human cohort.
-	a new folder “MinReads3” (or MinReads2 for the human cohort) is created in each animal directory, e.g.…\Mouse\SF-T#1\UsedLibrary\MaxDev0\MinReads3”.
+This script now takes all `BC-Distr_Group_....csv` files from a cohort higher than the given threshold as the 2nd argument.
 
 
-11. Reallocate for easier access
-Directing towards, e. g. “…\Human\SF-T#1\UsedLibrary\MaxDev0\MinReads2\” is cumbersome; hence files can be copied to “…\Human_CSR\” by running “../5_Misc/Copy-from-CSR_Docker.py”. First, open it with NotePad++ and adapt lines 5 and 6. Afterward, run it and select the cohort directory, e.g., “…\Human\”.
-For the Mouse cohort, set lines 5 and 6 to 
-     	'R': "MinReads3"} 
-usr_cohort = "mouse"
+```sh
+docker run -it --rm -v C:/your/path:/JD r_env Rscript /JD/scripts/4_CSR/Mode_Docker.R /JD/docker/export/your-cohort-name_CS threshold
+```
 
-And run
-docker run -it --rm -v C:/your/path:/JD py_env python /JD/data/barcode_data/scripts/5_Misc/Copy-from-CSR_Docker.py /JD/data/barcode_data/data/mouse
+   -> The mode is printed in the console.
 
-For the human cohort, set lines 5 and 6 to
-     	'R': "MinReads2"} 
-usr_cohort = "human"
-And run
-docker run -it --rm -v C:/your/path:/JD py_env python /JD/data/barcode_data/scripts/5_Misc/Copy-from-CSR_Docker.py /JD/data/barcode_data/data/human
+## 10. Read filtering
+Open [Filter_Reads_Multiple_10_JD_Docker.py](/scripts/4_CSR/Filter_Reads_Multiple_10_JD_Docker.py) with NotePad++.  Set `userThresh` to the mode returned in the previous step. `userSkip` allows to skip (not apply the read filter) highly diverse, like preTX samples, if the criteria are fulfilled, e.g., the mean read count is <= 8. Set `usr_filter` to _CS_, as you want to apply the filter on the clustered and stringency-filtered files. `usr_replace` does not need to be adapted.
 
-12. Merge animals
-To merge the CSR-filtered files, open “../5_Misc/Merge_Animal_Multiple_11_JD_Docker.py”. As we reallocated the files, the usr_filter in line 5 can be set to empty (usr_filter = “”). Run the script. Select the CSR-cohort directory, e.g.. “…\Human_CSR\”.
-docker run -it --rm -v C:/your/path:/JD py_env python /JD/data/barcode_data/scripts/5_Misc/Merge_Animal_Multiple_11_JD_Docker.py /JD/data/barcode_data/data/mouse_CSR
 
-docker run -it --rm -v C:/your/path:/JD py_env python /JD/data/barcode_data/scripts/5_Misc/Merge_Animal_Multiple_11_JD_Docker.py /JD/data/barcode_data/data/human_CSR
+```sh
+docker run -it --rm -v C:/your/path:/JD py_env python /JD/scripts/4_CSR/Filter_Reads_Multiple_10_JD_Docker.py /JD/data/mouse
+```
 
-13. Merge replicates
-For clonal development figures, only replicates of the respective animals need to be merged (not all samples). For this, run “…/5_Misc/Merge_Replicates_Multiple_11_JD_Docker.py
-docker run -it --rm -v C:/your/path:/JD py_env python /JD/data/barcode_data/scripts/5_Misc/Merge_Replicates_Multiple_11_JD_Docker.py /JD/data/barcode_data/data/mouse_CSR
+   -> a new folder `MinReads3` (or similar, depending on the _userThresh_, is created in each individual directory, e.g. `.../mouse/SF-T#1/UsedLibrary/MaxDev0/MinReads3`.
 
-docker run -it --rm -v C:/your/path:/JD py_env python /JD/data/barcode_data/scripts/5_Misc/Merge_Replicates_Multiple_11_JD_Docker.py /JD/data/barcode_data/data/human_CSR
 
-	A new folder, “Merged,” is created in each animal directory containing the merged replicates.
+## 11. Reallocate for easier access
+Directing towards, e.g., `.../human/SF-T#1/UsedLibrary/MaxDev0/MinReads2` is cumbersome; hence files can be copied to `.../human_CSR` by running [Copy-from-CSR_Docker.py](/scripts/5_Misc/Copy-from-CSR_Docker.py). First, open it with NotePad++ and adapt lines 5 and 6. Afterward, run it and select the cohort directory, e.g., `.../human`. Adapt the `R` setting to the directory created during the last step, e.g., if the threshold was 3, then it should be _MinReads3_, and the `usr_cohort` should be the name of your cohort directory, e.g., _mouse_.
 
-14. Generation of final figures
-Explanation of how to create final figures and additional filtering/clustering steps are explained in the respective readme file in the figure subdirectories found at “…\Analysis\”.
 
+Afterward, run
+
+
+```sh
+docker run -it --rm -v C:/your/path:/JD py_env python /JD/scripts/5_Misc/Copy-from-CSR_Docker.py /JD/data/mouse
+```
+
+
+## 12. Merge animals
+To merge the CSR-filtered files, open [Merge_Animal_Multiple_11_JD_Docker.py](/scripts/5_Misc/Merge_Animal_Multiple_11_JD_Docker.py). As we reallocated the files, the `usr_filter` in line 5 can be set to empty (`usr_filter = ""`). Run the script. Select the CSR-cohort directory, e.g., `.../human_CSR`.
+
+
+```sh
+docker run -it --rm -v C:/your/path:/JD py_env python /JD/scripts/5_Misc/Merge_Animal_Multiple_11_JD_Docker.py /JD/data/mouse_CSR
+```
+
+
+## 13. Merge replicates
+For clonal development figures, only replicates of the respective animals need to be merged (not all samples). For this, run [Merge_Replicates_Multiple_11_JD_Docker.py](/scripts/5_Misc/Merge_Replicates_Multiple_11_JD_Docker.py):
+
+
+```sh
+docker run -it --rm -v C:/your/path:/JD py_env python /JD/scripts/5_Misc/Merge_Replicates_Multiple_11_JD_Docker.py /JD/data/mouse_CSR
+```
+
+   -> A new folder `Merged` is created in each indiviual directory containing the merged replicates.
+
+
+## 14. Generation of final figures
+Explanation of how to create final figures and additional filtering/clustering steps are explained in the respective readme files in the `/analysis` subdirectories.
 
 ## License
 This project is licensed under the MIT License. See the `[LICENSE](LICENSE)` file for details.
