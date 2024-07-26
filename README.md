@@ -76,7 +76,7 @@ In the following, we assume, that my data is found at `C:/your/path` and the mai
 ## 2. Preprocessing
 ### 2.1 Converting FASTQ into FNA (FASTA)
 Data provided as .fastq files need to be converted into .fna files, as their additional information about the quality of the sequences is not used in my scripts, in fact my scripts will only work if the data is supplied in the FNA (FASTA) format. 
-The custom Python script `FASTQ-Convert_10_JD_Docker.py` will transform the .fastq files and save the corresponding .fna file in the respective directory.
+The custom Python script  [FASTQ-Convert_10_JD_Docker.py](/scripts/1_preprocessing/FASTQ-Convert_10_JD_Docker.py) at `/scripts/1_preprocessing/` will transform the .fastq files and save the corresponding .fna file in the respective directory.
 
 ```sh
 docker run -it --rm -v C:/your/path:/JD py_env python /JD/scripts/1_preprocessing/FASTQ-Convert_10_JD_Docker.py /JD/sample_data/raw.fastq
@@ -87,52 +87,44 @@ If you have multiplexed data, e.g. having 100 different so-called library/index 
 Create a local "preprocessed" directory, where to save the demultiplexed-data, e.g. "/data/preprocessed". If you want to analyze multiple runs, create subfolders for every run, e.g., "/data/preprocessed/run1".
 
 ### 2.3 Running Preprocessing
-You may want to edit the maximum deviation from the stringent structure, for sequences to be included in the preprocessed files. You find the setting in line 6 in `/scripts/1_preprocessing/PreProcessing_12_JD_Docker.py`. I used a maximum deviation of 5.
-Make sure that `PreProcessing_Library.csv` is edited to your library/index sequences is located in the same directory as `PreProcessing_12_JD_Docker.py`.
+You may want to edit the maximum deviation from the stringent structure, for sequences to be included in the preprocessed files. You find the setting in line 6 in [PreProcessing_12_JD_Docker.py](/scripts/1_preprocessing/PreProcessing_12_JD_Docker.py). I used a maximum deviation of 5.
+Make sure that [PreProcessing_Library.csv](/scripts/1_preprocessing/PreProcessing_Library.csv) is edited to your library/index sequences and is located in the same directory as [PreProcessing_12_JD_Docker.py](/scripts/1_preprocessing/PreProcessing_12_JD_Docker.py).
 
 ```sh
 docker run -it --rm -v C:/your/path:/JD py_env python /JD/scripts/1_preprocessing/PreProcessing_12_JD_Docker.py /JD/data/raw_data/data.fna /JD/data/preprocessed/run1/
 ```
 
 The statistics at the end of the code execution are automatically saved as a text file in the respective preprocessed directory. You can execute the scripts in parallel using different shells. It might take a couple of hours, depending on your hardware.
-All sequences with up to 5 errors were now recovered from the raw data set.
+All sequences with up to 5 errors were now recovered from the raw data set in my case.
 
 ## 3. Filtering of samples by read distribution (“Run Indices”) 
-Reads of a run are not equally distributed between all samples \ index sequences (ITRGB_001, … ITRGB_100). Some samples are slightly overrepresented, assuming an equal distribution (expected reads). In contrast, others do not have any reads, e.g., in run 1505 ITRGB_002 and ITRGB_003, which is intended in these cases (mock controls). Samples with only very few sequences and minor read counts hamper the analysis of the relative composition. E. g. suppose a sample contains only one sequence with one read while all its related samples (e.g., different time points of peripheral blood samples) have>5.000 reads. In that case, it does not represent the real sample and should be excluded from the analysis. As a threshold, I decided to exclude samples that fail to exceed the lower 95% CI of the reads mean (= Run Index <0.127). By this, only very few samples were excluded, mainly containing one sequence with one read.
+Reads of a run are not equally distributed between all samples / index sequences (ITRGB_001, … ITRGB_100). Some samples are slightly overrepresented, assuming an equal distribution (expected reads). In contrast, others do not have any reads, e.g., if you included mock controls, like I did. Samples with only very few sequences and minor read counts hamper the analysis of the relative composition. E. g. suppose a sample contains only one sequence with one read while all its related samples (e.g., different time points of peripheral blood samples) have>5.000 reads. In that case, it does not represent the real sample and should be excluded from the analysis. As a threshold, I decided to exclude samples that fail to exceed the lower 95% CI of the reads mean (= Run Index <0.127). By this, only very few samples were excluded, mainly containing one sequence with one read.
 
-1.	Open “…\scripts\1_preprocessing\Run-indices_11_JD_Docker.R” with NotePad++.
-2.	Adjust the variables “TotalReads”, “PercDumb”, and “UsedBarcodes” at the beginning of the code to the information given in the statistics file of every run. E. g. for run 1505:
-o	TotalReads is the number in the following line: “6240802 sequences in total”.
-o	PercDumb is the percentage in this line: “1857678 (29.77%) allocated to dumb”.
-o	UsedBarcodes information is at the end: “Found a valid barcode structure for 98 of the 100 library IDs”.
-6240802	29.77	98
-docker run -it --rm -v C:/your/path:/JD r_env Rscript /JD/data/barcode_data/scripts/1_preprocessing/Run-indices_11_JD_Docker.R /JD/data/barcode_data/data/preprocessed/1505/Reads
+1. Open [Run-indices_11_JD_Docker.R](/scripts/1_preprocessing/Run-indices_11_JD_Docker.R)  at `/scripts/1_preprocessing/` with NotePad++.
+2.	Adjust the variables `TotalReads`, `PercDumb`, and `UsedBarcodes` at the beginning of the code to the information given in the statistics file of every run:
+   o	`TotalReads` is the number in the following line: `_TotalReads_ sequences in total`.
+   o	`PercDumb` is the percentage in this line: `... (_Percentage_) allocated to dumb`.
+   o	`UsedBarcodes` information is at the end: `Found a valid barcode structure for _UsedBarcodes_ of the ... library IDs`.
 
-1881377	59.09	99
-docker run -it --rm -v C:/your/path:/JD r_env Rscript /JD/data/barcode_data/scripts/1_preprocessing/Run-indices_11_JD_Docker.R /JD/data/barcode_data/data/preprocessed/1507/Reads
+```sh
+docker run -it --rm -v C:/your/path:/JD r_env Rscript /JD/scripts/1_preprocessing/Run-indices_11_JD_Docker.R /JD/data/preprocessed/run1/Reads
+```
 
-3792322	70.96	100
-docker run -it --rm -v C:/your/path:/JD r_env Rscript /JD/data/barcode_data/scripts/1_preprocessing/Run-indices_11_JD_Docker.R /JD/data/barcode_data/data/preprocessed/1509/Reads
+Two .csv files with statistics are created at the path passed as the first argument (the English and German versions, as they have different delimiter settings). They contain the `RunIndex` in the fourth column.
+Manually exclude samples that do not fulfill run index criteria by moving them from, e.g.. `.../data/preprocessed/run1/Reads` to `.../data/preprocessed/run1/Reads_excluded`. 
 
-5474484	39.19	100
-docker run -it --rm -v C:/your/path:/JD r_env Rscript /JD/data/barcode_data/scripts/1_preprocessing/Run-indices_11_JD_Docker.R /JD/data/barcode_data/data/preprocessed/1602/Reads
+Theoretically, an underperforming index primer used for multiplexing could also be the reason for a low run index. You may reveal this by fusing all of your statistics files and calculat means and standard deviations for each of the index primers and compare it to the overall mean and SD.
 
-Two .csv files with statistics are created at the path passed as the first argument (the English and German versions, as they have different delimiter settings). They contain the “RunIndex” in the fourth column.
-Manually exclude samples that do not fulfill run index criteria by moving them from, e.g.. “…\data\preprocessed\1505\Reads” to “…\data\preprocessed\1505\Reads_excluded”). 
-In the four runs, only a couple were excluded due to a lower run index than 0.127:
-•	Run 1505: ITRGB_001, _016, _031
-•	Run 1507: ITRGB_010, _040
-Theoretically, an underperforming Illumina primer used for multiplexing could also be the reason for a low run index. I fused all four statistics files to detect it and calculated means and standard deviations for each of the 100 primers and the overall mean and SD (“…\data\preprocessed\Primer-Performance.xslx”). Only the 95% CI of primer ITRGB_001 includes values lower than the overall 95% CI; therefore, it might be underperforming (visualized “…\data\preprocessed\Primer-performance.tiff”). However, run “1505” contained a non-template control, and (unfortunately) one sequence with one read was returned for this BC, leading to a higher SD. I assume all primers work fine.
- 
+ ## 4. Rough estimation of barcode library size
+This step is necessary to determine the data set's maximum allowed deviation (which corresponds to the cluster distance). The estimation needs to be done for every distinct experiment, in my case different transplantation cohorts.
 
-4. Rough estimation of barcode library size
-This step is necessary to determine the data set's maximum allowed deviation (which corresponds to the cluster distance). Estimation needs to be done for both cohorts.
-a) Chapman estimation based on plasmid triplicates and preTX samples
+### 4.1 Chapman estimation based on plasmid triplicates and preTX samples
 The path after Rscript needs to lead to the Chapman-Estimation_Docker.R file (“--file argument”). The first (real) argument is the path to Chapman-Estimation_Sample-Allocation.csv, while the 2nd arg is the preprocessed directory.
 docker run -it --rm -v C:/your/path:/JD r_env Rscript /JD/data/barcode_data/scripts/2_maxDeviation/Chapman-Estimation_Docker.R /JD/data/barcode_data/scripts/2_maxDeviation/Chapman-Estimation_Sample-Allocation.csv /JD/data/barcode_data/data/preprocessed
 
 	A .csv file holding all Chapman estimations is created at “./docker/export/Chapman-Estimation_Results.csv”. Move the file to ../2_maxDeviation/.
-b) Estimation based on the gain of new unique sequences (barcode saturation)
+
+### 4.2 Estimation based on the gain of new unique sequences (barcode saturation)
 Murine cohort
 Images are created with the BC-Saturation-Estimation_Docker.R script. The first arg (Sample-Allocation.csv) holds the information about which samples of the murine cohort can be found at which run and multiplexing ID. The second arg is the preprocessed directory.
 docker run -it --rm -v C:/your/path:/JD r_env Rscript /JD/data/barcode_data/scripts/2_maxDeviation/BC-Saturation-Estimation_Docker.R /JD/data/barcode_data/scripts/Sample-Allocation.csv /JD/data/barcode_data/data/preprocessed
