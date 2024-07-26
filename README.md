@@ -102,9 +102,13 @@ Reads of a run are not equally distributed between all samples / index sequences
 
 1. Open [Run-indices_11_JD_Docker.R](/scripts/1_preprocessing/Run-indices_11_JD_Docker.R)  at `/scripts/1_preprocessing/` with NotePad++.
 2.	Adjust the variables `TotalReads`, `PercDumb`, and `UsedBarcodes` at the beginning of the code to the information given in the statistics file of every run:
-   o	`TotalReads` is the number in the following line: `_TotalReads_ sequences in total`.
-   o	`PercDumb` is the percentage in this line: `... (_Percentage_) allocated to dumb`.
-   o	`UsedBarcodes` information is at the end: `Found a valid barcode structure for _UsedBarcodes_ of the ... library IDs`.
+
+    o `TotalReads` is the number in the following line:        _TotalReads_ sequences in total
+   
+     o `PercDumb` is the percentage in this line:              ... (_PercDumb_) allocated to dumb
+   
+     o `UsedBarcodes` information is at the end:               Found a valid barcode structure for _UsedBarcodes_ of the ... library IDs
+   
 
 ```sh
 docker run -it --rm -v C:/your/path:/JD r_env Rscript /JD/scripts/1_preprocessing/Run-indices_11_JD_Docker.R /JD/data/preprocessed/run1/Reads
@@ -119,29 +123,29 @@ Theoretically, an underperforming index primer used for multiplexing could also 
 This step is necessary to determine the data set's maximum allowed deviation (which corresponds to the cluster distance). The estimation needs to be done for every distinct experiment, in my case different transplantation cohorts.
 
 ### 4.1 Chapman estimation based on plasmid triplicates and preTX samples
-The path after Rscript needs to lead to the Chapman-Estimation_Docker.R file (“--file argument”). The first (real) argument is the path to Chapman-Estimation_Sample-Allocation.csv, while the 2nd arg is the preprocessed directory.
-docker run -it --rm -v C:/your/path:/JD r_env Rscript /JD/data/barcode_data/scripts/2_maxDeviation/Chapman-Estimation_Docker.R /JD/data/barcode_data/scripts/2_maxDeviation/Chapman-Estimation_Sample-Allocation.csv /JD/data/barcode_data/data/preprocessed
-
-	A .csv file holding all Chapman estimations is created at “./docker/export/Chapman-Estimation_Results.csv”. Move the file to ../2_maxDeviation/.
-
-### 4.2 Estimation based on the gain of new unique sequences (barcode saturation)
-Murine cohort
-Images are created with the BC-Saturation-Estimation_Docker.R script. The first arg (Sample-Allocation.csv) holds the information about which samples of the murine cohort can be found at which run and multiplexing ID. The second arg is the preprocessed directory.
-docker run -it --rm -v C:/your/path:/JD r_env Rscript /JD/data/barcode_data/scripts/2_maxDeviation/BC-Saturation-Estimation_Docker.R /JD/data/barcode_data/scripts/Sample-Allocation.csv /JD/data/barcode_data/data/preprocessed
-
-human cohort
-The 1st arg is changed to (Sample-Allocation_human.csv) for the human cohort.
-docker run -it --rm -v C:/your/path:/JD r_env Rscript /JD/data/barcode_data/scripts/2_maxDeviation/BC-Saturation-Estimation_Docker.R /JD/data/barcode_data/scripts/Sample-Allocation_human.csv /JD/data/barcode_data/data/preprocessed
-
-	.tiff files are created at “./docker/export/. They visualize the regression, including its limit value (s), which surrogates the library size(s). Move the files to ../2_maxDeviation/.
-c) Defining the sizes
-Data from a) and b) was manually transferred into “Library-Size.xslx” and separated by their vector (either mCherry in the murine cohort or Cerulean in the human cohort). To be more conservative regarding the maximum allowed deviation, I took the maximum estimated value for each plasmid, which is 155,648 for mCherry and 85,483 for Cerulean.
+The path after Rscript needs to lead to the [Chapman-Estimation_Docker.R](/scripts/2_maxDeviation/Chapman-Estimation_Docker.R) file (`--file argument`). The first (real) argument is the path to [Chapman-Estimation_Sample-Allocation.csv](/scripts/2_maxDeviation/Chapman-Estimation_Sample-Allocation.csv), while the 2nd arg is the `preprocessed` directory.
 
 
+```sh
+docker run -it --rm -v C:/your/path:/JD r_env Rscript /JD/scripts/2_maxDeviation/Chapman-Estimation_Docker.R /JD/scripts/2_maxDeviation/Chapman-Estimation_Sample-Allocation.csv /JD/data/preprocessed
+```
+
+A .csv file holding all Chapman estimations is created at `./docker/export/Chapman-Estimation_Results.csv`. You can move the file to your `../2_maxDeviation/` directory.
+
+### 4.2 Estimation based on the gain of new unique sequences
+Images are created with the [BC-Saturation-Estimation_Docker.R](/scripts/2_maxDeviation/BC-Saturation-Estimation_Docker.R) script. The first arg ([Sample-Allocation.csv](/scripts/Sample-Allocation.csv)) holds the information about which samples of a specific cohort can be found at which run and multiplexing ID. The second arg is the `preprocessed` directory.
 
 
+```sh
+docker run -it --rm -v C:/your/path:/JD r_env Rscript /JD/scripts/2_maxDeviation/BC-Saturation-Estimation_Docker.R /JD/scripts/Sample-Allocation.csv /JD/data/preprocessed
+```
 
-5. Determination and application of deviation thresholds
+A .tiff file is created at `./docker/export/` that visualizes the regression, including its limit value, which surrogates the library size.
+
+### 4.3 Defining the sizes
+Data from [4.1](#41-chapman-estimation-based-on-plasmid-triplicates-and-preTX-samples) and [4.2](#42-estimation-based-on-the-gain-of-new-unique-sequences) should be manually transferred into an Excel sheet, e.g., `Library-Size.xlsx`. For each distinct cohort (vector) you can now compare the different estimations. I chose the most conservative approach regarding the maximum allowed deviation, so I took the maximum estimated value for each vector.
+
+## 5. Determination and application of deviation thresholds
 The barcode library sizes of 4. are inserted into line 2 (userPoolsize) of “../2_maxDeviation/Return-Deviation-Threshold_Docker.py”. An applied type I error of 2.5% results in a deviation threshold of 2 for both cohorts.
 docker run -it --rm -v C:/your/path:/JD py_env python /JD/data/barcode_data/scripts/2_maxDeviation/Return-Deviation-Threshold_Docker.py
 	Both result in a recommended Deviation threshold of 2.
